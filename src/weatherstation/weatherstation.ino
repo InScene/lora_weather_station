@@ -35,27 +35,17 @@
 #include <lmic.h>
 #include <hal/hal.h>
 
-
 // use low power sleep; comment next line to not use low power sleep
 #include "LowPower.h"
-bool next = false;
-
-#define ACTIVATE_PRINT 1
-
-#define battery_Adc_Pin A0
-
-/****************** rain gauge sensor ***********************/
-#include "raingauge.h"
-raingauge::RainGauge RainGauge;
-
-/****************** Regensensor Sensor ***********************/
-#include "rainsense.h"
-
-/****************** BME280 Sensor ***********************/
-#include "bme280sensor.h"
-
-/****************** CayenneLPP ***********************/
 #include <CayenneLPP.h>
+#include "rainsense.h"
+#include "bme280sensor.h"
+#include "raingauge.h"
+
+raingauge::RainGauge RainGauge;
+bool next = false;
+#define ACTIVATE_PRINT 1
+#define battery_Adc_Pin A0
 
 /****************************************** LoRa *******************************/
 #include "radio_keys.h"
@@ -150,22 +140,24 @@ void do_send(osjob_t* j){
         #endif
       }
 
-      /**** Lese Batterie Spannung *****/
+      /**** get battery voltage *****/
       lpp.addAnalogInput(4, getBattAdcValue() * 0.004333333 );
 
-      /**** Lese Regensensor Wert *****/
+      /**** get rain sense value *****/
       rainsense::RainSense RainSense;
       RainSense.fetchData();
       
       lpp.addDigitalInput(5, RainSense.getInterpreteValue()); 
       lpp.addAnalogInput(6, RainSense.getAdcValue()); 
 
-      /**** Lese Regenmenge *****/
+      /**** get rain amount *****/
       lpp.addAnalogInput(7, RainGauge.get1mmRainAmount());
-      RainGauge.printCnt();
+      #ifdef ACTIVATE_PRINT
+        RainGauge.printCnt();
+      #endif
       RainGauge.resetRainCnt();
       
-      /**** Sende Daten *****/
+      /**** send data *****/
       LMIC_setTxData2(1, lpp.getBuffer(), lpp.getSize(), 0);
 
       #ifdef ACTIVATE_PRINT
@@ -174,8 +166,6 @@ void do_send(osjob_t* j){
     }
     // Next TX is scheduled after TX_COMPLETE event.
 }
-
-
 
 uint16_t getBattAdcValue() {
   uint32_t val = analogRead(battery_Adc_Pin);
