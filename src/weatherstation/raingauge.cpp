@@ -6,6 +6,11 @@ using namespace raingauge;
 uint8_t RainGauge::rainPulseCnt = 0;
 unsigned long RainGauge::last_interrupt_time = 0;
 
+RainGauge::RainGauge(){
+  rainPulseCnt = 0;
+  last_interrupt_time = 0;
+}
+  
 void RainGauge::rain_signal() {
   cli();
   unsigned long interrupt_time = micros();  // If interrupts come faster than 50ms, assume it's a bounce and ignore
@@ -23,4 +28,9 @@ float RainGauge::get1mmRainAmount() {
 
 void RainGauge::resetRainCnt() {
   rainPulseCnt = 0;
+}
+
+void RainGauge::printCnt() {
+  Serial.print(F("Rain gauge counter: "));
+  Serial.println(rainPulseCnt);
 }

@@ -163,6 +163,7 @@ void do_send(osjob_t* j){
 
       /**** Lese Regenmenge *****/
       lpp.addAnalogInput(7, RainGauge.get1mmRainAmount());
+      RainGauge.printCnt();
       RainGauge.resetRainCnt();
       
       /**** Sende Daten *****/

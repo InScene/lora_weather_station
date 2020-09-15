@@ -9,10 +9,12 @@ namespace raingauge {
 class RainGauge {
 
   public:
-    
+
+    RainGauge();
     static void rain_signal();
     float get1mmRainAmount();
     void resetRainCnt();
+    void printCnt();
 
   private:
   
