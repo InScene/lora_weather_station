@@ -40,12 +40,12 @@
 #include <CayenneLPP.h>
 #include "rainsense.h"
 #include "bme280sensor.h"
+#include "battery.h"
 #include "raingauge.h"
 
 raingauge::RainGauge RainGauge;
 bool next = false;
 #define ACTIVATE_PRINT 1
-#define battery_Adc_Pin A0
 
 /****************************************** LoRa *******************************/
 #include "radio_keys.h"
@@ -141,8 +141,13 @@ void do_send(osjob_t* j){
       }
 
       /**** get battery voltage *****/
-      lpp.addAnalogInput(4, getBattAdcValue() * 0.004333333 );
-
+      battery::Battery Battery;
+      Battery.fetchData();
+      lpp.addAnalogInput(4, Battery.getVoltage() );
+      #ifdef ACTIVATE_PRINT
+        Battery.print();
+      #endif
+      
       /**** get rain sense value *****/
       rainsense::RainSense RainSense;
       RainSense.fetchData();
@@ -165,14 +170,6 @@ void do_send(osjob_t* j){
       #endif
     }
     // Next TX is scheduled after TX_COMPLETE event.
-}
-
-uint16_t getBattAdcValue() {
-  uint32_t val = analogRead(battery_Adc_Pin);
-  val += analogRead(battery_Adc_Pin);
-  val += analogRead(battery_Adc_Pin);
-
-  return val/3;
 }
 
 
