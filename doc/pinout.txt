@@ -1,0 +1,9 @@
+7   --> bme280 vin
+A5  --> bme280 scl
+A4  --> bme280 sda
+gnd --> bme280 gnd
+A0  --> battery voltage
+2   --> rain gouge
+A1  --> rain sense
+
+
