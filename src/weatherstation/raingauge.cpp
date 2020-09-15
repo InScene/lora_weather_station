@@ -3,7 +3,7 @@
 
 using namespace raingauge;
 
-uint8_t RainGauge::rainCnt_5min = 0;
+uint8_t RainGauge::rainPulseCnt = 0;
 unsigned long RainGauge::last_interrupt_time = 0;
 
 void RainGauge::rain_signal() {
@@ -11,16 +11,16 @@ void RainGauge::rain_signal() {
   unsigned long interrupt_time = micros();  // If interrupts come faster than 50ms, assume it's a bounce and ignore
   if (interrupt_time - last_interrupt_time > 50) 
   {
-    rainCnt_5min++;
+    rainPulseCnt++;
     last_interrupt_time = interrupt_time;
   }
   sei();
 }
 
 float RainGauge::get1mmRainAmount() {
-  return mm_rain_per_pulse * rainCnt_5min;
+  return mm_rain_per_pulse * rainPulseCnt;
 }
 
 void RainGauge::resetRainCnt() {
-  rainCnt_5min = 0;
+  rainPulseCnt = 0;
 }

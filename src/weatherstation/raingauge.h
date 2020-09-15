@@ -16,7 +16,7 @@ class RainGauge {
 
   private:
   
-    static uint8_t rainCnt_5min;
+    static uint8_t rainPulseCnt;
     static unsigned long last_interrupt_time;
 
     /* Basis for the calculation of the rain amount in mm
