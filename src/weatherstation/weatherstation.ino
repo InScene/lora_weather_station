@@ -49,8 +49,7 @@ bool next = false;
 raingauge::RainGauge RainGauge;
 
 /****************** Regensensor Sensor ***********************/
-#define rainsense_Adc_Pin A1
-#define rainsense_VCC_Pin 8
+#include "rainsense.h"
 
 /****************** BME280 Sensor ***********************/
 #include <Adafruit_BME280.h>
@@ -156,10 +155,11 @@ void do_send(osjob_t* j){
       lpp.addAnalogInput(4, getBattAdcValue() * 0.004333333 );
 
       /**** Lese Regensensor Wert *****/
-      uint16_t rainSenseVal = getRainSenseAdcValue();
+      rainsense::RainSense RainSense;
+      RainSense.fetchData();
       
-      lpp.addDigitalInput(5, interpreteRainSenseAdcValue(rainSenseVal)); 
-      lpp.addAnalogInput(6, rainSenseVal); 
+      lpp.addDigitalInput(5, RainSense.getInterpreteValue()); 
+      lpp.addAnalogInput(6, RainSense.getAdcValue()); 
 
       /**** Lese Regenmenge *****/
       lpp.addAnalogInput(7, RainGauge.get1mmRainAmount());
@@ -227,50 +227,6 @@ uint16_t getBattAdcValue() {
   return val/3;
 }
 
-uint16_t getRainSenseAdcValue() {
-  
-  digitalWrite(rainsense_VCC_Pin, HIGH);
-  delay(2000);
-  uint32_t val = analogRead(rainsense_Adc_Pin);
-  val += analogRead(rainsense_Adc_Pin);
-  val += analogRead(rainsense_Adc_Pin);
-  digitalWrite(rainsense_VCC_Pin, LOW);
-  return val/3;
-}
-
-uint8_t interpreteRainSenseAdcValue(uint16_t val) {
-  #ifdef ACTIVATE_PRINT
-    Serial.println(F("Regensensor daten: "));
-    Serial.println(val);
-  #endif
-  
-  if(val < 256) {
-    #ifdef ACTIVATE_PRINT
-      Serial.println("Wolkenbruch");
-    #endif
-    return 3;
-  }
-  else
-  if(val < 400) {
-    #ifdef ACTIVATE_PRINT
-      Serial.println("Starkregen");
-    #endif
-    return 2;
-  }
-  else
-  if(val < 668) {
-    #ifdef ACTIVATE_PRINT
-      Serial.println("Leichtregen");
-    #endif
-    return 1;
-  }
-  else { // messwert in [768, 1024[
-    #ifdef ACTIVATE_PRINT
-      Serial.println("Trocken => Kein Regen");
-    #endif
-    return 0;    
-  }
-}
 
 void(* resetFunc) (void) = 0; //declare reset function @ address 0
 
