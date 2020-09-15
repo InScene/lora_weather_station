@@ -35,6 +35,7 @@
 #include <lmic.h>
 #include <hal/hal.h>
 
+
 // use low power sleep; comment next line to not use low power sleep
 #include "LowPower.h"
 bool next = false;
@@ -42,27 +43,10 @@ bool next = false;
 #define ACTIVATE_PRINT 1
 
 #define battery_Adc_Pin A0
-/****************** Regenmengen Sensor ***********************/
-#define raingouge_int_Pin 2
 
-volatile uint8_t rainCnt_5min = 0;
-volatile unsigned long last_interrupt_time = 0;
-
-/* Grundlage der Berechnung der Regenmenge in mm
-    5cm x 11cm, and 6 pulses per 10mL => 10/6 = 1.67mL per pulse.
-
-    1mm rain = 0.1*5*11cm = 5.5 mL
-    1" rain = 2.54*5*11cm = 139.70 mL
-
-    @ 6 pulses per 10mL => 10/6 = 1.67mL per pulse
-    
-    pulses / mm = 5.5 / (10/6) = 3.3
-    pulses / in = 139.7/(10/6) = 83.82
-    
-    mm / pulse = 0.30303
-    in / pulse = 0.01193
-*/
-const float mm_rain_per_pulse = 0.30303; // 0.30303mm Regen pro Pulse
+/****************** rain gauge sensor ***********************/
+#include "raingauge.h"
+raingauge::RainGauge RainGauge = raingauge::RainGauge();
 
 /****************** Regensensor Sensor ***********************/
 #define rainsense_Adc_Pin A1
@@ -178,8 +162,8 @@ void do_send(osjob_t* j){
       lpp.addAnalogInput(6, rainSenseVal); 
 
       /**** Lese Regenmenge *****/
-      lpp.addAnalogInput(7, get1mmRainAmount(rainCnt_5min));
-      rainCnt_5min = 0;
+      lpp.addAnalogInput(7, RainGauge.get1mmRainAmount());
+      RainGauge.resetRainCnt();
       
       /**** Sende Daten *****/
       LMIC_setTxData2(1, lpp.getBuffer(), lpp.getSize(), 0);
@@ -287,21 +271,6 @@ uint8_t interpreteRainSenseAdcValue(uint16_t val) {
   }
 }
 
-float get1mmRainAmount(const uint16_t rainCnt) {
-  return mm_rain_per_pulse * rainCnt;
-}
-
-static void rain_signal() {
-  cli();
-  unsigned long interrupt_time = micros();  // If interrupts come faster than 50ms, assume it's a bounce and ignore
-  if (interrupt_time - last_interrupt_time > 50) 
-  {
-    rainCnt_5min++;
-    last_interrupt_time = interrupt_time;
-  }
-  sei();
-}
-
 void(* resetFunc) (void) = 0; //declare reset function @ address 0
 
 void setup() {
@@ -315,7 +284,7 @@ void setup() {
     pinMode(raingouge_int_Pin, INPUT_PULLUP);
     // Lege die ISR 'blink' auf den Interruptpin mit Modus 'CHANGE':
     // "Bei wechselnder Flanke auf dem Interruptpin" --> "Führe die ISR aus"
-    attachInterrupt(digitalPinToInterrupt(raingouge_int_Pin), rain_signal, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(raingouge_int_Pin), RainGauge.rain_signal, CHANGE);
 
     /* Regen Sensor */
     pinMode(rainsense_Adc_Pin,   INPUT);
