@@ -46,7 +46,7 @@ bool next = false;
 
 /****************** rain gauge sensor ***********************/
 #include "raingauge.h"
-raingauge::RainGauge RainGauge = raingauge::RainGauge();
+raingauge::RainGauge RainGauge;
 
 /****************** Regensensor Sensor ***********************/
 #define rainsense_Adc_Pin A1
