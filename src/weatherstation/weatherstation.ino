@@ -52,12 +52,7 @@ raingauge::RainGauge RainGauge;
 #include "rainsense.h"
 
 /****************** BME280 Sensor ***********************/
-#include <Adafruit_BME280.h>
-Adafruit_BME280 bme; // I2C
-
-#define BME280_SDA_PIN A4
-#define BME280_SCL_PIN A5
-#define BME280_VCC_PIN 7
+#include "bme280sensor.h"
 
 /****************** CayenneLPP ***********************/
 #include <CayenneLPP.h>
@@ -134,22 +129,26 @@ void do_send(osjob_t* j){
     } else {
       /* Initialize CayenneLPP with max buffer size */
       CayenneLPP lpp(30);
-      float temp, hum, press;
 
       #ifdef ACTIVATE_PRINT
         Serial.println(F("Fetch data"));
       #endif
-      /**** Lese BME280 Data ****/
-      digitalWrite(BME280_VCC_PIN, HIGH);
-      delay(1000);
+      /**** get BME280 Data ****/
+      bme280_sensor::BME280Sensor bmeSensor;
       
-      if(readBme280Values(temp, hum, press)) {
-        lpp.addTemperature(1, temp);
-        lpp.addRelativeHumidity(2, hum);
-        lpp.addBarometricPressure(3, press);
+      if(bmeSensor.fetchData()) {
+        lpp.addTemperature(1, bmeSensor.getTemperature());
+        lpp.addRelativeHumidity(2, bmeSensor.getHumidity());
+        lpp.addBarometricPressure(3, bmeSensor.getPressure());
+        #ifdef ACTIVATE_PRINT
+          bmeSensor.print();
+        #endif
+        
+      } else {
+        #ifdef ACTIVATE_PRINT
+          Serial.println(F("Error getting bme280 data!"));
+        #endif
       }
-
-      digitalWrite(BME280_VCC_PIN, LOW);
 
       /**** Lese Batterie Spannung *****/
       lpp.addAnalogInput(4, getBattAdcValue() * 0.004333333 );
@@ -176,48 +175,7 @@ void do_send(osjob_t* j){
     // Next TX is scheduled after TX_COMPLETE event.
 }
 
-bool readBme280Values(float &temp, float &hum, float &press){
-  float val;
-  uint8_t counterTemp = 0;
-  uint8_t counterPress = 0;
-  uint8_t counterHum = 0;
-  temp = 0;
-  hum = 0;
-  press = 0;
-  
-  if(bme.begin(0x76)) {
-    for(int x=0; x<3; x++) {
-      val = bme.readTemperature();
-      if(val != NAN) {
-        temp += val;
-        counterTemp++;
-      }
 
-      val = bme.readPressure();
-      if(val != NAN) {
-        press += val / 100.0F;
-        counterPress++;
-      }
-
-      val = bme.readHumidity();
-      if(val != NAN) {
-        hum += val;
-        counterHum++;
-      }
-    }
-
-    if((counterTemp==0)||(counterPress==0)||(counterHum==0))
-      return false;
-      
-    temp = temp / counterTemp;
-    press = press / counterPress;
-    hum = hum / counterHum;
-
-    return true;
-  }
-    
-  return false;
-}
 
 uint16_t getBattAdcValue() {
   uint32_t val = analogRead(battery_Adc_Pin);
