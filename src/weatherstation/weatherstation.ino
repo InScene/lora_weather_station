@@ -120,46 +120,10 @@ void do_send(osjob_t* j){
         Serial.println(F("OP_TXRXPEND, not sending"));
       #endif      
     } else {
-      /* Initialize CayenneLPP with max buffer size */
-      CayenneLPP lpp(30);
-
       #ifdef ACTIVATE_PRINT
         Serial.println(F("Fetch data"));
       #endif
-      /**** get BME280 Data ****/      
-      if(g_bmeSensor.fetchData()) {
-        lpp.addTemperature(1, g_bmeSensor.getTemperature());
-        lpp.addRelativeHumidity(2, g_bmeSensor.getHumidity());
-        lpp.addBarometricPressure(3, g_bmeSensor.getPressure());
-        #ifdef ACTIVATE_PRINT
-          g_bmeSensor.print();
-        #endif
-        
-      } else {
-        #ifdef ACTIVATE_PRINT
-          Serial.println(F("Error getting bme280 data!"));
-        #endif
-      }
-
-      /**** get battery voltage *****/
-      g_battery.fetchData();
-      lpp.addAnalogInput(4, g_battery.getVoltage() );
-      #ifdef ACTIVATE_PRINT
-        g_battery.print();
-      #endif
-      
-      /**** get rain sense value *****/
-      g_rainSense.fetchData();
-      
-      lpp.addDigitalInput(5, g_rainSense.getInterpreteValue()); 
-      lpp.addAnalogInput(6, g_rainSense.getAdcValue()); 
-
-      /**** get rain amount *****/
-      lpp.addAnalogInput(7, g_rainGauge.get1mmRainAmount());
-      #ifdef ACTIVATE_PRINT
-        g_rainGauge.printCnt();
-      #endif
-      g_rainGauge.resetRainCnt();
+      CayenneLPP lpp = getCayenneFormatedData();
       
       /**** send data *****/
       LMIC_setTxData2(1, lpp.getBuffer(), lpp.getSize(), 0);
@@ -171,6 +135,47 @@ void do_send(osjob_t* j){
     // Next TX is scheduled after TX_COMPLETE event.
 }
 
+CayenneLPP getCayenneFormatedData() {
+  /* Initialize CayenneLPP with max buffer size */
+  CayenneLPP lpp(30);
+
+  /**** get BME280 Data ****/      
+  if(g_bmeSensor.fetchData()) {
+    lpp.addTemperature(1, g_bmeSensor.getTemperature());
+    lpp.addRelativeHumidity(2, g_bmeSensor.getHumidity());
+    lpp.addBarometricPressure(3, g_bmeSensor.getPressure());
+    #ifdef ACTIVATE_PRINT
+      g_bmeSensor.print();
+    #endif
+    
+  } else {
+    #ifdef ACTIVATE_PRINT
+      Serial.println(F("Error getting bme280 data!"));
+    #endif
+  }
+
+  /**** get battery voltage *****/
+  g_battery.fetchData();
+  lpp.addAnalogInput(4, g_battery.getVoltage() );
+  #ifdef ACTIVATE_PRINT
+    g_battery.print();
+  #endif
+  
+  /**** get rain sense value *****/
+  g_rainSense.fetchData();
+  
+  lpp.addDigitalInput(5, g_rainSense.getInterpreteValue()); 
+  lpp.addAnalogInput(6, g_rainSense.getAdcValue()); 
+
+  /**** get rain amount *****/
+  lpp.addAnalogInput(7, g_rainGauge.get1mmRainAmount());
+  g_rainGauge.resetRainCnt();
+  #ifdef ACTIVATE_PRINT
+    g_rainGauge.printCnt();
+  #endif
+
+  return lpp;
+}
 
 void(* resetFunc) (void) = 0; //declare reset function @ address 0
 
