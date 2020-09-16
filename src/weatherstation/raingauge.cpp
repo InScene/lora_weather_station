@@ -22,6 +22,14 @@ void RainGauge::rain_signal() {
   sei();
 }
 
+void RainGauge::init() {
+  // Lege den Interruptpin als Inputpin mit Pullupwiderstand fest
+  pinMode(raingouge_int_Pin, INPUT_PULLUP);
+  // Lege die ISR 'blink' auf den Interruptpin mit Modus 'CHANGE':
+  // "Bei wechselnder Flanke auf dem Interruptpin" --> "Führe die ISR aus"
+  attachInterrupt(digitalPinToInterrupt(raingouge_int_Pin), rain_signal, CHANGE);
+}
+
 float RainGauge::get1mmRainAmount() {
   return mm_rain_per_pulse * rainPulseCnt;
 }

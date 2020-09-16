@@ -12,6 +12,7 @@ namespace rainsense {
 class RainSense {
   public:
     RainSense();
+    void init();
     void fetchData();
     uint16_t getAdcValue();
     uint8_t getInterpreteValue();

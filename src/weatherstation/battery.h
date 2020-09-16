@@ -10,7 +10,7 @@ namespace battery{
 class Battery{
   public:
     Battery();
-
+    void init();
     void fetchData();
     float getVoltage();
     void print();

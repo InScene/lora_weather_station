@@ -10,6 +10,7 @@ namespace bme280_sensor{
 class BME280Sensor {
   public:
     BME280Sensor();
+    void init();
     bool fetchData();
 
     float getTemperature();

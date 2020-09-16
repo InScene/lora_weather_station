@@ -7,6 +7,11 @@ RainSense::RainSense() : adcValue(0) {
   
 }
 
+void RainSense::init() {
+  pinMode(rainsense_Adc_Pin,   INPUT);
+  pinMode(rainsense_VCC_Pin, OUTPUT);
+}
+
 void RainSense::fetchData() {
   digitalWrite(rainsense_VCC_Pin, HIGH);
   delay(2000);

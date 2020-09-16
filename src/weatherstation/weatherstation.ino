@@ -43,7 +43,10 @@
 #include "battery.h"
 #include "raingauge.h"
 
-raingauge::RainGauge RainGauge;
+raingauge::RainGauge g_rainGauge;
+rainsense::RainSense g_rainSense;
+bme280_sensor::BME280Sensor g_bmeSensor;
+battery::Battery g_battery;
 bool next = false;
 #define ACTIVATE_PRINT 1
 
@@ -123,15 +126,13 @@ void do_send(osjob_t* j){
       #ifdef ACTIVATE_PRINT
         Serial.println(F("Fetch data"));
       #endif
-      /**** get BME280 Data ****/
-      bme280_sensor::BME280Sensor bmeSensor;
-      
-      if(bmeSensor.fetchData()) {
-        lpp.addTemperature(1, bmeSensor.getTemperature());
-        lpp.addRelativeHumidity(2, bmeSensor.getHumidity());
-        lpp.addBarometricPressure(3, bmeSensor.getPressure());
+      /**** get BME280 Data ****/      
+      if(g_bmeSensor.fetchData()) {
+        lpp.addTemperature(1, g_bmeSensor.getTemperature());
+        lpp.addRelativeHumidity(2, g_bmeSensor.getHumidity());
+        lpp.addBarometricPressure(3, g_bmeSensor.getPressure());
         #ifdef ACTIVATE_PRINT
-          bmeSensor.print();
+          g_bmeSensor.print();
         #endif
         
       } else {
@@ -141,26 +142,24 @@ void do_send(osjob_t* j){
       }
 
       /**** get battery voltage *****/
-      battery::Battery Battery;
-      Battery.fetchData();
-      lpp.addAnalogInput(4, Battery.getVoltage() );
+      g_battery.fetchData();
+      lpp.addAnalogInput(4, g_battery.getVoltage() );
       #ifdef ACTIVATE_PRINT
-        Battery.print();
+        g_battery.print();
       #endif
       
       /**** get rain sense value *****/
-      rainsense::RainSense RainSense;
-      RainSense.fetchData();
+      g_rainSense.fetchData();
       
-      lpp.addDigitalInput(5, RainSense.getInterpreteValue()); 
-      lpp.addAnalogInput(6, RainSense.getAdcValue()); 
+      lpp.addDigitalInput(5, g_rainSense.getInterpreteValue()); 
+      lpp.addAnalogInput(6, g_rainSense.getAdcValue()); 
 
       /**** get rain amount *****/
-      lpp.addAnalogInput(7, RainGauge.get1mmRainAmount());
+      lpp.addAnalogInput(7, g_rainGauge.get1mmRainAmount());
       #ifdef ACTIVATE_PRINT
-        RainGauge.printCnt();
+        g_rainGauge.printCnt();
       #endif
-      RainGauge.resetRainCnt();
+      g_rainGauge.resetRainCnt();
       
       /**** send data *****/
       LMIC_setTxData2(1, lpp.getBuffer(), lpp.getSize(), 0);
@@ -181,26 +180,10 @@ void setup() {
       Serial.println(F("Enter setup"));
     #endif
 
-    /* Regenmengen Sensor */
-    // Lege den Interruptpin als Inputpin mit Pullupwiderstand fest
-    pinMode(raingouge_int_Pin, INPUT_PULLUP);
-    // Lege die ISR 'blink' auf den Interruptpin mit Modus 'CHANGE':
-    // "Bei wechselnder Flanke auf dem Interruptpin" --> "Führe die ISR aus"
-    attachInterrupt(digitalPinToInterrupt(raingouge_int_Pin), RainGauge.rain_signal, CHANGE);
-
-    /* Regen Sensor */
-    pinMode(rainsense_Adc_Pin,   INPUT);
-    pinMode(rainsense_VCC_Pin, OUTPUT);
-    pinMode(BME280_VCC_PIN, OUTPUT);
-
-    /* Batterie */
-    // Fuer A0 Battery
-    analogReference(INTERNAL);
-    delay(1000);
-    // Lese Batterie Daten drei mal ein, um ADC einpendeln zu lassen
-    analogRead(battery_Adc_Pin);
-    analogRead(battery_Adc_Pin);
-    analogRead(battery_Adc_Pin);
+    g_rainGauge.init();
+    g_rainSense.init();
+    g_bmeSensor.init();
+    g_battery.init();    
 
     #ifdef VCC_ENABLE
     // For Pinoccio Scout boards

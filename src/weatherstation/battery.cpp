@@ -7,6 +7,15 @@ Battery::Battery() : adcValue(0) {
   
 }
 
+void Battery::init() {
+  analogReference(INTERNAL);
+  delay(1000);
+  // Read battery data three times to let adc oscillate in
+  analogRead(battery_Adc_Pin);
+  analogRead(battery_Adc_Pin);
+  analogRead(battery_Adc_Pin);
+}
+
 void Battery::fetchData() {
   uint32_t val = analogRead(battery_Adc_Pin);
   val += analogRead(battery_Adc_Pin);

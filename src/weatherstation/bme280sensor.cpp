@@ -12,8 +12,16 @@ BME280Sensor::BME280Sensor() :
   
 }
 
+void BME280Sensor::init() {
+  pinMode(BME280_VCC_PIN, OUTPUT);
+}
+
 bool BME280Sensor::fetchData(){
   bool success = false;
+  temperature = 0;
+  humidity = 0;
+  pressure = 0;
+  
   digitalWrite(BME280_VCC_PIN, HIGH);
   delay(1000);
 

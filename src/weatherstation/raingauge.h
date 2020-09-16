@@ -12,6 +12,7 @@ class RainGauge {
 
     RainGauge();
     static void rain_signal();
+    void init();
     float get1mmRainAmount();
     void resetRainCnt();
     void printCnt();
