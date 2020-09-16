@@ -169,7 +169,7 @@ CayenneLPP getCayenneFormatedData() {
 
   /**** get rain amount *****/
   lpp.addAnalogInput(7, g_rainGauge.get1mmRainAmount());
-  g_rainGauge.resetRainCnt();
+  g_rainGauge.removeReadedRainCnt();
   #ifdef ACTIVATE_PRINT
     g_rainGauge.printCnt();
   #endif

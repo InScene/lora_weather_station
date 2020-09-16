@@ -14,7 +14,7 @@ class RainGauge {
     static void rain_signal();
     void init();
     float get1mmRainAmount();
-    void resetRainCnt();
+    void removeReadedRainCnt();
     void printCnt();
 
   private:
@@ -37,6 +37,8 @@ class RainGauge {
         in / pulse = 0.01193
     */
     const float mm_rain_per_pulse = 0.30303; // 0.30303mm rain per pulse
+
+    uint8_t lastReadedCntValue;
 };
 }
 #endif

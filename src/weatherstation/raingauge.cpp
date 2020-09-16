@@ -9,6 +9,7 @@ unsigned long RainGauge::last_interrupt_time = 0;
 RainGauge::RainGauge(){
   rainPulseCnt = 0;
   last_interrupt_time = 0;
+  lastReadedCntValue = 0;
 }
   
 void RainGauge::rain_signal() {
@@ -31,11 +32,19 @@ void RainGauge::init() {
 }
 
 float RainGauge::get1mmRainAmount() {
-  return mm_rain_per_pulse * rainPulseCnt;
+  lastReadedCntValue = rainPulseCnt;
+  return mm_rain_per_pulse * lastReadedCntValue;
 }
 
-void RainGauge::resetRainCnt() {
-  rainPulseCnt = 0;
+void RainGauge::removeReadedRainCnt() {
+  if(rainPulseCnt > 0 && 
+     lastReadedCntValue > 0 && 
+     lastReadedCntValue <= rainPulseCnt) {
+      
+    rainPulseCnt -= lastReadedCntValue;
+  }
+
+  lastReadedCntValue = 0;
 }
 
 void RainGauge::printCnt() {
