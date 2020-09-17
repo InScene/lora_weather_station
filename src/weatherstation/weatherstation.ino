@@ -42,11 +42,19 @@
 #include "bme280sensor.h"
 #include "battery.h"
 #include "raingauge.h"
+#include "failsafe.h"
+
+// Sende alle 3,5 Minuten eine Nachricht
+const unsigned TX_INTERVAL = 190;
 
 raingauge::RainGauge g_rainGauge;
 rainsense::RainSense g_rainSense;
 bme280_sensor::BME280Sensor g_bmeSensor;
 battery::Battery g_battery;
+failsafe::FailSafe g_resetDaily(86400 / TX_INTERVAL);
+failsafe::FailSafe g_wdtFailSafe(1000);
+failsafe::FailSafe g_loopFailSafe(2500000);
+
 bool next = false;
 #define ACTIVATE_PRINT 1
 
@@ -58,21 +66,6 @@ void os_getDevEui (u1_t* buf) { memcpy_P(buf, DEVEUI, 8);}
 void os_getDevKey (u1_t* buf) {  memcpy_P(buf, APPKEY, 16);}
 
 static osjob_t sendjob;
-
-// Sende alle 3,5 Minuten eine Nachricht
-const unsigned TX_INTERVAL = 190;
-
-// Resette Device jeden Tag
-const unsigned RESET_INTERVAL = 86400 / TX_INTERVAL;
-unsigned RESET_CNT = 0;
-
-// Resette Device, wenn Loop Cnt max erreicht. Passiert nur im Fehlerfall.
-const unsigned long LOOP_MAX_CNT = 2500000; // Das sind ca. 5 Min
-unsigned long LOOP_CNT = 0;
-
-// Sicherstellen, dass die WDT Sleep Schleife im Fehlerfall unterbrochen wird
-const unsigned long WDT_LOOP_MAX_CNT = 1000;
-unsigned long WDT_LOOP_CNT = 0;
 
 // Pin mapping
 const lmic_pinmap lmic_pins = {
@@ -177,7 +170,6 @@ CayenneLPP getCayenneFormatedData() {
   return lpp;
 }
 
-void(* resetFunc) (void) = 0; //declare reset function @ address 0
 
 void setup() {
     #ifdef ACTIVATE_PRINT
@@ -216,51 +208,7 @@ void setup() {
     #endif
 }
 
-void resetWhenCounterMaxReached() {
-  RESET_CNT++;
-  if (RESET_CNT >= RESET_INTERVAL) {
-    RESET_CNT = 0;
-    #ifdef ACTIVATE_PRINT
-      Serial.println(F("Reset device"));
-      Serial.flush(); // give the serial print chance to complete
-    #endif
-    resetFunc();  //call reset
-  } else {
-    #ifdef ACTIVATE_PRINT
-      Serial.print(F("Reset counter: "));
-      Serial.print(RESET_CNT);
-      Serial.print(F(", from:"));
-      Serial.println(RESET_INTERVAL);
-      Serial.flush(); // give the serial print chance to complete
-    #endif
-  }
-}
 
-void resetWhenLoopCounterMaxReached() {
-  LOOP_CNT++;
-  if(LOOP_CNT % LOOP_MAX_CNT == 0 && LOOP_CNT != 0) {
-    #ifdef ACTIVATE_PRINT
-      Serial.println(F("Reset device because of loop overrun"));
-      Serial.flush(); // give the serial print chance to complete
-    #endif
-    LOOP_CNT = 0;
-    resetFunc();  //call reset
-  }
-}
-
-bool failsaveWdtEndlessLoopInterrupter(){
-    WDT_LOOP_CNT++;
-    if(WDT_LOOP_CNT >= WDT_LOOP_MAX_CNT) {
-      #ifdef ACTIVATE_PRINT
-        Serial.print(F("WDT error. Loop counter max reached!"));
-        Serial.println(WDT_LOOP_CNT);
-        Serial.flush(); // give the serial print chance to complete
-      #endif
-      
-      return true;
-    }
-    return false;
-}
 
 void sleepForATime() {
   const int sleepcycles = TX_INTERVAL / 8;  // calculate the number of sleepcycles (8s) given the TX_INTERVAL
@@ -272,12 +220,13 @@ void sleepForATime() {
   #endif
   
   for (int i=0; i<sleepcycles; i++) {
-    WDT_LOOP_CNT = 0;
+    g_wdtFailSafe.resetCnt();
     // Enter power down state for 8 s with ADC and BOD module disabled
     LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
     // If watchdog not triggered, go back to sleep. End sleep by other interrupt 
-    while(!LowPower.isWdtTriggered() || failsaveWdtEndlessLoopInterrupter())
+     while(!LowPower.isWdtTriggered())
     {
+      g_wdtFailSafe.increaseCnt();
       LowPower.returnToSleep();
     }
   }
@@ -289,14 +238,13 @@ void sleepForATime() {
 
 void loop() {
   extern volatile unsigned long timer0_overflow_count;
-
+  
   if (next == false) {
     os_runloop_once();
-    resetWhenLoopCounterMaxReached();
 
   } else {
-    LOOP_CNT = 0;
-    resetWhenCounterMaxReached();
+    g_resetDaily.increaseCnt();
+    g_loopFailSafe.resetCnt();
 
     sleepForATime();
     next = false;
@@ -304,4 +252,6 @@ void loop() {
     // Start job
     do_send(&sendjob);
   }
+
+  g_loopFailSafe.increaseCnt();
 }
