@@ -1,15 +1,7 @@
 /*******************************************************************************
- * Copyright (c) 2015 Thomas Telkamp and Matthijs Kooijman
+ * Copyright (c) 2020 by Christian Mertens
  *
- * Permission is hereby granted, free of charge, to anyone
- * obtaining a copy of this document and accompanying files,
- * to do whatever they want with them without any restriction,
- * including, but not limited to, copying, modification and redistribution.
- * NO WARRANTY OF ANY KIND IS PROVIDED.
- *
- * This example sends a valid LoRaWAN packet with static payload, 
- * using frequency and encryption settings matching those of
- * the (early prototype version of) The Things Network.
+ * This code is for a LoRaWAN weather station based on a arduino Pro Mini 
  *
  * Note: LoRaWAN per sub-band duty-cycle limitation is enforced (1% in g1,
  *  0.1% in g2).
@@ -23,13 +15,14 @@
  *  6: digital rain value (2bytes)
  *  7: rain ammount counter last 5 minutes (mililiter)
  *  
+ *  Receive raw little endian rain sense border values:
+ *   Example: FF 00 90 01 9C 02
+ *   FF 00 : 256 = cloudburst
+ *   90 01 : 400 = heavy rain
+ *   9c 02 : 668 = light rain
+ *   
  * ToDo:
- * - set NWKSKEY (value from staging.thethingsnetwork.com)
- * - set APPKSKEY (value from staging.thethingsnetwork.com)
- * - set DEVADDR (value from staging.thethingsnetwork.com)
- * - optionally comment #define ACTIVATE_PRINT
- * - set TX_INTERVAL in seconds
- * - change mydata to another (small) static text
+ * Set keys in radio_keys.h (value from staging.thethingsnetwork.com)
  *
  *******************************************************************************/
 #include <lmic.h>
@@ -89,10 +82,14 @@ void onEvent (ev_t ev) {
             LMIC_setLinkCheckMode(0);
             break;
         case EV_TXCOMPLETE:
+            if(LMIC.dataLen) { // data received in rx slot after tx
+              handleRxData();
+            }
             // Schedule next transmission
             next = true;            
             break;
         case EV_RXCOMPLETE:
+            Serial.println(F("Event rx complete"));
             // Do nothing
             break;
         default:
@@ -105,6 +102,25 @@ void onEvent (ev_t ev) {
     }    
 }
 
+void handleRxData() {
+  if(LMIC.dataLen==6){
+    Serial.println(F("Rx data with correct length received"));
+    uint16_t rxData[3];
+    memcpy(rxData, LMIC.frame + LMIC.dataBeg, LMIC.dataLen);
+    g_dataStorage.set_rainsenseCloudburstBorder(rxData[0]);
+    g_dataStorage.set_rainsenseHeavyRainBorder(rxData[1]);
+    g_dataStorage.set_rainsenseLightRainBorder(rxData[2]);
+
+    g_dataStorage.persist();
+    g_dataStorage.print();
+    useStoredValues();
+  } else {
+    #ifdef ACTIVATE_PRINT
+      Serial.print(F("No correct rx data length received. Len:"));
+      Serial.println(LMIC.dataLen);
+    #endif
+  }
+}
 
 void do_send(osjob_t* j){
     #ifdef ACTIVATE_PRINT
