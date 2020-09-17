@@ -80,6 +80,7 @@ void onEvent (ev_t ev) {
     switch(ev) {
         case EV_JOINING:
             // Do noting, because we react on EV_JOINED
+            break;
         case EV_JOINED:
             // Disable link check validation (automatically enabled
             // during join, but not supported by TTN at this time).
