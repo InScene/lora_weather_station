@@ -13,7 +13,7 @@
  *  4: Battery value (Volt)
  *  5: Interpretet rain sensor : 0=dry, 1=light rain, 2=heavy rain, 3=downpour
  *  6: digital rain value (2bytes)
- *  7: rain ammount counter since the last message (mm)
+ *  7: rain amount counter since the last message (mm)
  *  
  *  Receive raw little endian rain sense border values:
  *   Example: FF 00 90 01 9C 02
