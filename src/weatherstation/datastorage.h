@@ -35,9 +35,9 @@ class DataStorage{
     void readValues();
     void writeInt(uint16_t adr, uint16_t val);
     uint16_t readInt(uint16_t adr);
-    void writeLong(unsigned long val, uint16_t adr);
+    void writeLong(uint16_t adr, unsigned long val);
     unsigned long readLong(uint16_t adr);
-    unsigned long get_stored_crc(void);
+    unsigned long calculate_crc(void);
 };
 }
 
