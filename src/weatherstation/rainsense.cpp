@@ -3,7 +3,11 @@
 
 using namespace rainsense;
 
-RainSense::RainSense() : adcValue(0) {
+RainSense::RainSense() : 
+  _cloudburst(256),
+  _heavyRain(400),
+  _lightRain(668),
+  _adcValue(0){
   
 }
 
@@ -19,34 +23,34 @@ void RainSense::fetchData() {
   val += analogRead(rainsense_Adc_Pin);
   val += analogRead(rainsense_Adc_Pin);
   digitalWrite(rainsense_VCC_Pin, LOW);
-  adcValue = val/3;
+  _adcValue = val/3;
 }
 
 uint16_t RainSense::getAdcValue() {
-  return adcValue;
+  return _adcValue;
 }
 
 uint8_t RainSense::getInterpreteValue() {
   #ifdef ACTIVATE_PRINT
     Serial.print(F("rain sense data: "));
-    Serial.println(adcValue);
+    Serial.println(_adcValue);
   #endif
   
-  if(adcValue < 256) {
+  if(_adcValue < _cloudburst) {
     #ifdef ACTIVATE_PRINT
       Serial.println("cloudburst");
     #endif
     return 3;
   }
   else
-  if(adcValue < 400) {
+  if(_adcValue < _heavyRain) {
     #ifdef ACTIVATE_PRINT
       Serial.println("heavy rain");
     #endif
     return 2;
   }
   else
-  if(adcValue < 668) {
+  if(_adcValue < _lightRain) {
     #ifdef ACTIVATE_PRINT
       Serial.println("light rain");
     #endif
@@ -58,4 +62,16 @@ uint8_t RainSense::getInterpreteValue() {
     #endif
     return 0;    
   }
+}
+
+void RainSense::set_cloudburst(uint16_t val) {
+  _cloudburst = val;
+}
+
+void RainSense::set_heavyRain(uint16_t val) {
+  _heavyRain = val;
+}
+
+void RainSense::set_lightRain(uint16_t val) {
+  _lightRain = val;
 }

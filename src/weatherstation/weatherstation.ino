@@ -174,20 +174,28 @@ CayenneLPP getCayenneFormatedData() {
 }
 
 
+void useStoredValues() {
+  g_rainSense.set_cloudburst(g_dataStorage.get_rainsenseCloudburstBorder());
+  g_rainSense.set_heavyRain(g_dataStorage.get_rainsenseHeavyRainBorder());
+  g_rainSense.set_lightRain(g_dataStorage.get_rainsenseLightRainBorder());
+}
+
+
 void setup() {
     #ifdef ACTIVATE_PRINT
       Serial.begin(9600);
       Serial.println(F("Enter setup"));
     #endif
 
-    g_rainGauge.init();
+    g_dataStorage.init();
+    g_dataStorage.print();
+    useStoredValues();
+    
     g_rainSense.init();
+    g_rainGauge.init();
     g_bmeSensor.init();
     g_battery.init();    
 
-    g_dataStorage.init();
-    g_dataStorage.print();
-    
     #ifdef VCC_ENABLE
     // For Pinoccio Scout boards
     pinMode(VCC_ENABLE, OUTPUT);

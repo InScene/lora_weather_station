@@ -17,8 +17,15 @@ class RainSense {
     uint16_t getAdcValue();
     uint8_t getInterpreteValue();
 
-   private:
-    uint16_t adcValue;
+    void set_cloudburst(uint16_t val);
+    void set_heavyRain(uint16_t val);
+    void set_lightRain(uint16_t val);
+
+  private:
+    uint16_t _cloudburst;
+    uint16_t _heavyRain;
+    uint16_t _lightRain;
+    uint16_t _adcValue;
 };
 }
 
