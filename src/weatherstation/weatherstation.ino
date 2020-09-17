@@ -43,6 +43,7 @@
 #include "battery.h"
 #include "raingauge.h"
 #include "failsafe.h"
+#include "datastorage.h"
 
 // Sende alle 3,5 Minuten eine Nachricht
 const unsigned TX_INTERVAL = 190;
@@ -54,6 +55,7 @@ battery::Battery g_battery;
 failsafe::FailSafe g_resetDaily(86400 / TX_INTERVAL);
 failsafe::FailSafe g_wdtFailSafe(1000);
 failsafe::FailSafe g_loopFailSafe(2500000);
+datastorage::DataStorage g_dataStorage;
 
 bool next = false;
 #define ACTIVATE_PRINT 1
@@ -183,6 +185,9 @@ void setup() {
     g_bmeSensor.init();
     g_battery.init();    
 
+    g_dataStorage.init();
+    g_dataStorage.print();
+    
     #ifdef VCC_ENABLE
     // For Pinoccio Scout boards
     pinMode(VCC_ENABLE, OUTPUT);
